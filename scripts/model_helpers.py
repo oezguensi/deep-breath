@@ -246,7 +246,6 @@ class CustomTensorBoard(Callback):
         self.log_dir = log_dir
         self.encoder = encoder
         self.embeddings_freq = embeddings_freq
-        # self.embeddings_metadata = embeddings_metadata or {}
         self.metadata_path = metadata_path
         self.batch_size = batch_size
         self.embeddings_data = embeddings_data
@@ -291,22 +290,11 @@ class CustomTensorBoard(Callback):
 
             self.saver = tf.train.Saver(list(embeddings_vars.values()))
 
-            # TODO
-            # if not isinstance(self.embeddings_metadata, str):
-            #     embeddings_metadata = self.embeddings_metadata
-            # else:
-            #     embeddings_metadata = {layer_name: self.embeddings_metadata
-            #                            for layer_name in embeddings_vars.keys()}
-
             config = projector.ProjectorConfig()
 
             for layer_name, tensor in embeddings_vars.items():
                 embedding = config.embeddings.add()
                 embedding.tensor_name = tensor.name
-
-                # TODO
-                # if layer_name in embeddings_metadata:
-                #     embedding.metadata_path = embeddings_metadata[layer_name]
                 embedding.metadata_path = self.metadata_path
 
             projector.visualize_embeddings(self.writer, config)
