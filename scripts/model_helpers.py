@@ -225,7 +225,7 @@ class CustomTensorBoard(Callback):
                  batch_size=32,
                  encoder=None,
                  embeddings_freq=0,
-                 embeddings_metadata=None,
+                 metadata_path=None,
                  embeddings_data=None,
                  update_freq='epoch'):
         super(CustomTensorBoard, self).__init__()
@@ -246,7 +246,8 @@ class CustomTensorBoard(Callback):
         self.log_dir = log_dir
         self.encoder = encoder
         self.embeddings_freq = embeddings_freq
-        self.embeddings_metadata = embeddings_metadata or {}
+        # self.embeddings_metadata = embeddings_metadata or {}
+        self.metadata_path = metadata_path
         self.batch_size = batch_size
         self.embeddings_data = embeddings_data
         if update_freq == 'batch':
@@ -276,7 +277,7 @@ class CustomTensorBoard(Callback):
 
             # for layer in self.model.layers:
             #     if layer.name in embeddings_layer_names:
-            embedding_input = self.encoder.layers[-1].output  
+            embedding_input = self.encoder.layers[-1].output
             embedding_size = np.prod(embedding_input.shape[1:])
             embedding_input = tf.reshape(embedding_input,
                                          (step, int(embedding_size)))
@@ -306,6 +307,7 @@ class CustomTensorBoard(Callback):
                 # TODO
                 # if layer_name in embeddings_metadata:
                 #     embedding.metadata_path = embeddings_metadata[layer_name]
+                embedding.metadata_path = self.metadata_path
 
             projector.visualize_embeddings(self.writer, config)
 
