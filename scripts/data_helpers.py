@@ -72,7 +72,7 @@ def make_square(img, color=None):
         return cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)
 
 
-def create_img_pairs(file_pairs, mode, target_size):
+def create_img_pairs(file_pairs, mode, target_size, canvas_color=(255, 255, 255)):
     """
     Loads data and preprocesses it
     :param file_pairs: File pairs to obtain images
@@ -86,8 +86,8 @@ def create_img_pairs(file_pairs, mode, target_size):
     i = 0
 
     for file_pair in file_pairs:
-        img_pair = [cv2.imread(img_file, -1) for img_file in file_pair]
-        img_pair = [make_square(img) for img in img_pair]
+        img_pair = [cv2.imread(img_file, -1)[:, :, ::-1] for img_file in file_pair]
+        img_pair = [make_square(img, color=canvas_color) for img in img_pair]
         img_pair = [cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC) for img in img_pair]
 
         if mode == 'test':
@@ -123,9 +123,19 @@ def split_imgs(img_pairs):
     return splitted
 
 
-def augment_img(img, flips, image_gen, seed, scale_range=(0.7, 1.3), tx=10, ty=10):
+def augment_img(img, image_gen, seed, scale_range=(0.7, 1.3), tx=10, ty=10):
+    """
+    Augment images by flipping horizontally and vertically, zooming and shifting in x and y-direction
+    :para img: Image to augment
+    :param image_gen: Image generator to used
+    :param seed: Set different seeds for deterministic but still random behavior
+    :param scale_range: Zoom factor
+    :param tx: Amount of pixels to shift in x direction
+    :param ty: Amount of pixels to shift in y direction
+    """
+    
+    flips = list(product([True, False], [True, False]))
     np.random.seed(seed)
-
     flip = flips[np.random.choice(len(flips))]
 
     scale_factor = np.random.uniform(scale_range[0], scale_range[1])
@@ -146,14 +156,12 @@ class DataGenerator(Sequence):
     Generates data while training
     """
 
-    def __init__(self, img_pairs, labels, augment, equalized_hist, batch_size=32, shuffle=True):
+    def __init__(self, img_pairs, labels, augment, batch_size=32, shuffle=True):
         self.img_pairs = img_pairs
         self.labels = labels
         self.augment = augment
-        self.equalized_hist = equalized_hist
         self.batch_size = batch_size
         self.shuffle = shuffle
-        self.flips = list(product([True, False], [True, False]))
         self.image_gen = ImageDataGenerator()
         self.epoch = 0
         self.on_epoch_end()
@@ -188,7 +196,7 @@ class DataGenerator(Sequence):
         for idx, img_pair in zip(idxs, batch_pairs):
             if self.augment:
                 seed = (self.epoch * idx) % (2 ** 32 - 1)
-                img_pair = [augment_img(img, self.flips, self.image_gen, seed=seed + i)
+                img_pair = [augment_img(img, self.image_gen, seed=seed + i)
                             for i, img in enumerate(img_pair)]
 
             # Normalize image

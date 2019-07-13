@@ -30,17 +30,17 @@ def create_mobile_net_encoder(input_shape, dense_layers=None, mobilenet_width=1)
     return Model(inputs=mobilenet.input, outputs=output)
 
 
-def euclidean_distance(v, w):
+def euclidean_distance(vectors):
     """
     Implementation of the euclidean distance
     :param v: First vector
     :param w: Second vector
     :return: Euclidean distance function
     """
+    
+    assert vectors[0].shape[1] == vectors[1].shape[1], 'Both vectors must have the same dimensions'
 
-    assert len(v) == len(w), 'Both vectors must have the same dimensions'
-
-    return K.sqrt(K.maximum(K.sum(K.square(v - w), axis=1, keepdims=True), K.epsilon()))
+    return K.sqrt(K.maximum(K.sum(K.square(vectors[0] - vectors[1]), axis=1, keepdims=True), K.epsilon()))
 
 
 def create_siamese_model(encoder, distance_func):
@@ -61,6 +61,10 @@ def create_siamese_model(encoder, distance_func):
     distance = Lambda(distance_func, name='distance')([encoding_1, encoding_2])
 
     return Model(inputs=[input_1, input_2], outputs=distance)
+
+
+def siamese_accuracy(y_true, distance):
+    return K.mean(K.equal(y_true, K.cast(distance > 0.5, y_true.dtype)))
 
 
 def contrastive_loss(y_true, distance, margin=1.0):
