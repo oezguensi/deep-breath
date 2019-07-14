@@ -76,6 +76,15 @@ def make_square(img, color=None):
 
     
 def preprocess_img(image, target_size, canvas_color=(255, 255, 255), normalize=True):
+    """
+    Preprocesses image for training
+    :param image: Image to process
+    :param target_size: Output size to resize image to
+    :param canvas_color: Color of the square canvas the image will be in
+    :param normalize: Determines if image will be normalized
+    :return: Returns preprocessed image
+    """
+    
     img = image.copy()
     img = make_square(img, color=canvas_color)
     img = cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC)
@@ -86,47 +95,10 @@ def preprocess_img(image, target_size, canvas_color=(255, 255, 255), normalize=T
     return img
 
 
-# def create_img_pairs(file_pairs, mode, target_size, canvas_color=(255, 255, 255)):
-#     """
-#     Loads data and preprocesses it
-#     :param file_pairs: File pairs to obtain images
-#     :param mode: In test mode, data will be normalized immediately.
-#     In train mode, this is not the case because of following augmentations.
-#     :param target_size: Size to reshape images to
-#     :return: Returns image pairs
-#     """
-
-#     img_pairs = []
-#     i = 0
-
-#     for file_pair in file_pairs:
-#         img_pair = [cv2.imread(img_file, -1)[:, :, ::-1] for img_file in file_pair]
-#         img_pair = [make_square(img, color=canvas_color) for img in img_pair]
-#         img_pair = [cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC) for img in img_pair]
-
-#         if mode == 'test':
-#             img_pair = [img / 255.0 for img in img_pair]
-#             img_pair = [img.astype('float32') for img in img_pair]
-
-#         img_pairs.append(img_pair)
-
-#         if i % 100 == 0:
-#             if i == 0:
-#                 start = time.time()
-#             else:
-#                 end = time.time()
-#                 print('Progressed time: {:.2f} sec - ETA: {:.2f} sec'.format(
-#                     end - start, (len(file_pairs) - i) * ((end - start) / i)))
-
-#         i += 1
-
-#     return img_pairs
-
-
 def split_imgs(img_pairs):
     """
     Transforms image pairs into correct shape for training
-    :param img_pairs:
+    :param img_pairs: Paired images
     :return: Returns data in necessary shape
     """
 
@@ -223,6 +195,13 @@ class DataGenerator(Sequence):
     
     
 def create_metadata(file_path, files, classes):
+    """
+    Creates tab seperated metadata file to visualize classes in embeddings
+    :param file_path: Path of file to be saved
+    :param files: Files to visualize
+    :param classes: Corresponding classes of files (in sequential order)
+    :return:
+    """
     if not isdir(dirname(file_path)):
         makedirs(dirname(file_path))
 

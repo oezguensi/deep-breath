@@ -64,8 +64,16 @@ def create_siamese_model(encoder, distance_func):
     return Model(inputs=[input_1, input_2], outputs=distance)
 
 
-def siamese_accuracy(y_true, distance):
-    return K.mean(K.equal(y_true, K.cast(distance > 0.5, y_true.dtype)))
+def siamese_accuracy(y_true, distance, threshold=0.5):
+    """
+    Gives the accuracy of the model
+    :param y_true: Ground truth labels
+    :param distance: Distance metric to evaluate
+    :param threshold: Threshold for correct prediction
+    :return: Accuracy function
+    """
+    
+    return K.mean(K.equal(y_true, K.cast(distance > threshold, y_true.dtype)))
 
 
 def contrastive_loss(y_true, distance, margin=1.0):
@@ -195,7 +203,7 @@ class TensorBoardEmbeddings(Callback):
                 saver = tf.train.Saver()
 
                 sess.run(tf.global_variables_initializer())
-                saver.save(sess, join(self.logdir, 'embeddings.ckpt'))
+                saver.save(sess, join(self.logdir, 'embeddings_checkpoint.ckpt'))
 
                 for i, embeddings in enumerate(embeddingss):
                     embedding = self.config.embeddings.add()
