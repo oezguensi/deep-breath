@@ -2,9 +2,12 @@ import numpy as np
 import cv2
 import time
 
+from os import makedirs
+from os.path import dirname, isdir, basename
 from keras.utils import Sequence
 from keras.preprocessing.image import ImageDataGenerator
 from itertools import product
+
 
 def create_pairs(data, ratio_0_1=1, discard_rest=True):
     """
@@ -71,42 +74,53 @@ def make_square(img, color=None):
     else:
         return cv2.copyMakeBorder(img, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)
 
+    
+def preprocess_img(image, target_size, canvas_color=(255, 255, 255), normalize=True):
+    img = image.copy()
+    img = make_square(img, color=canvas_color)
+    img = cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC)
 
-def create_img_pairs(file_pairs, mode, target_size, canvas_color=(255, 255, 255)):
-    """
-    Loads data and preprocesses it
-    :param file_pairs: File pairs to obtain images
-    :param mode: In test mode, data will be normalized immediately.
-    In train mode, this is not the case because of following augmentations.
-    :param target_size: Size to reshape images to
-    :return: Returns image pairs
-    """
+    if normalize:
+        img = (img / 255.0).astype('float32')
 
-    img_pairs = []
-    i = 0
+    return img
 
-    for file_pair in file_pairs:
-        img_pair = [cv2.imread(img_file, -1)[:, :, ::-1] for img_file in file_pair]
-        img_pair = [make_square(img, color=canvas_color) for img in img_pair]
-        img_pair = [cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC) for img in img_pair]
 
-        if mode == 'test':
-            img_pair = [img / 255.0 for img in img_pair]
-            img_pair = [img.astype('float32') for img in img_pair]
+# def create_img_pairs(file_pairs, mode, target_size, canvas_color=(255, 255, 255)):
+#     """
+#     Loads data and preprocesses it
+#     :param file_pairs: File pairs to obtain images
+#     :param mode: In test mode, data will be normalized immediately.
+#     In train mode, this is not the case because of following augmentations.
+#     :param target_size: Size to reshape images to
+#     :return: Returns image pairs
+#     """
 
-        img_pairs.append(img_pair)
+#     img_pairs = []
+#     i = 0
 
-        if i % 100 == 0:
-            if i == 0:
-                start = time.time()
-            else:
-                end = time.time()
-                print('Progressed time: {:.2f} sec - ETA: {:.2f} sec'.format(
-                    end - start, (len(file_pairs) - i) * ((end - start) / i)))
+#     for file_pair in file_pairs:
+#         img_pair = [cv2.imread(img_file, -1)[:, :, ::-1] for img_file in file_pair]
+#         img_pair = [make_square(img, color=canvas_color) for img in img_pair]
+#         img_pair = [cv2.resize(img, target_size, interpolation=cv2.INTER_CUBIC) for img in img_pair]
 
-        i += 1
+#         if mode == 'test':
+#             img_pair = [img / 255.0 for img in img_pair]
+#             img_pair = [img.astype('float32') for img in img_pair]
 
-    return img_pairs
+#         img_pairs.append(img_pair)
+
+#         if i % 100 == 0:
+#             if i == 0:
+#                 start = time.time()
+#             else:
+#                 end = time.time()
+#                 print('Progressed time: {:.2f} sec - ETA: {:.2f} sec'.format(
+#                     end - start, (len(file_pairs) - i) * ((end - start) / i)))
+
+#         i += 1
+
+#     return img_pairs
 
 
 def split_imgs(img_pairs):
@@ -206,3 +220,17 @@ class DataGenerator(Sequence):
             img_pairs.append(img_pair)
 
         return split_imgs(np.array(img_pairs))
+    
+    
+def create_metadata(file_path, files, classes):
+    if not isdir(dirname(file_path)):
+        makedirs(dirname(file_path))
+
+    with open(file_path, 'w') as fn:
+        fn.write('Filename\tClass\n')
+        for file, vis_class in zip(files, classes):
+            fn.write('{}\t{}\n'.format(basename(file), vis_class))
+            
+            
+            
+            
